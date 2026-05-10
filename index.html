@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Gym Gestión - Frontend</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <div class="card">
+        <h2>LOGIN GIMNASIO</h2>
+        <input type="email" id="email" placeholder="Email (admin@gym.com)">
+        <input type="password" id="password" placeholder="Contraseña (admin123)">
+        <button type="button" onclick="login()">Entrar</button>
+        
+        <hr id="divider" style="display: none;">
+        
+        <h3 id="areaPrivada" style="display: none;">Área Privada</h3>
+        <button type="button" id="btnPlanes" onclick="obtenerDatos()" style="background: #007bff; display: none;">Ver Mis Planes</button>
+        <div id="mensaje"></div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:3000';
+
+        async function login() {
+            const email = document.getElementById('email').value.trim();
+            const password = document.getElementById('password').value.trim();
+            const mensaje = document.getElementById('mensaje');
+
+            if (!email || !password) {
+                mensaje.innerText = '❗ Completa email y contraseña.';
+                return;
+            }
+
+            try {
+                const res = await fetch(`${API_URL}/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+
+                if (!res.ok) {
+                    const errorText = await res.text();
+                    mensaje.innerText = `❌ Error en credenciales. ${res.status} ${res.statusText}`;
+                    console.error('Login fallido:', res.status, res.statusText, errorText);
+                    return;
+                }
+
+                const data = await res.json();
+                if (!data.token) {
+                    mensaje.innerText = '❌ No se recibió token del servidor.';
+                    console.error('Login success pero sin token:', data);
+                    return;
+                }
+
+                localStorage.setItem('token_gym', data.token);
+                mensaje.innerText = '✅ Login exitoso. Token guardado.';
+                document.getElementById('divider').style.display = 'block';
+                document.getElementById('areaPrivada').style.display = 'block';
+                document.getElementById('btnPlanes').style.display = 'block';
+            } catch (error) {
+                mensaje.innerText = '❌ Error de conexión. Revisa que el servidor esté activo.';
+                console.error('Error login:', error);
+            }
+        }
+
+        async function obtenerDatos() {
+            const token = localStorage.getItem('token_gym');
+            const mensaje = document.getElementById('mensaje');
+
+            if (!token) {
+                mensaje.innerText = '❗ Debes iniciar sesión primero.';
+                return;
+            }
+
+            try {
+                const res = await fetch(`${API_URL}/mis-suscripciones`, {
+                    method: 'GET',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (!res.ok) {
+                    const errorText = await res.text();
+                    mensaje.innerText = '🚫 No tienes acceso o el token expiró.';
+                    console.error('Fetch mis-suscripciones fallido:', res.status, res.statusText, errorText);
+                    return;
+                }
+
+                const planes = await res.json();
+                if (planes.length > 0) {
+                    mensaje.innerHTML = '<strong>Tus planes:</strong><br>' + JSON.stringify(planes, null, 2).replace(/\n/g, '<br>').replace(/ /g, '&nbsp;');
+                } else {
+                    mensaje.innerText = 'No tienes planes contratados.';
+                }
+            } catch (error) {
+                mensaje.innerText = '❌ Error de conexión al obtener datos.';
+                console.error('Error obtenerDatos:', error);
+            }
+        }
+
+        // Mostrar área privada si ya hay token guardado
+        window.addEventListener('DOMContentLoaded', function() {
+            const token = localStorage.getItem('token_gym');
+            if (token) {
+                document.getElementById('divider').style.display = 'block';
+                document.getElementById('areaPrivada').style.display = 'block';
+                document.getElementById('btnPlanes').style.display = 'block';
+            }
+        });
+    </script>
+</body>
+</html>
