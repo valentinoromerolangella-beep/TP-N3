@@ -1,1 +1,1 @@
-# TP-N3
+La aplicación es un sistema de Gestión de Membresías y Control de Pagos para un gimnasio. Su objetivo principal es automatizar el ciclo de vida de un socio, desde que se registra y elige un plan, hasta que el sistema detecta si su acceso debe ser revocado por falta de pago.
